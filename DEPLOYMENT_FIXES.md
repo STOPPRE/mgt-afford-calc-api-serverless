@@ -77,6 +77,70 @@ export default nextConfig;
 }
 ```
 
+### 5. GitHub Actions Workflow Issues ⚠️ **NEW FIX**
+**Problem**: GitHub Actions workflows were missing dependency installation and Node.js setup steps.
+
+**Solution**: Updated both workflow files to include proper steps:
+
+#### `.github/workflows/firebase-hosting-merge.yml`
+```yaml
+name: Deploy to Firebase Hosting on merge
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Build project
+        run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MTG_AFFORD_CALC_API_SERVERLESS }}
+          channelId: live
+          projectId: mtg-afford-calc-api-serverless
+```
+
+#### `.github/workflows/firebase-hosting-pull-request.yml`
+```yaml
+name: Deploy to Firebase Hosting on PR
+on: pull_request
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+jobs:
+  build_and_preview:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Build project
+        run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MTG_AFFORD_CALC_API_SERVERLESS }}
+          projectId: mtg-afford-calc-api-serverless
+```
+
 ## Deployment Process
 
 ### Build and Deploy
@@ -84,7 +148,7 @@ export default nextConfig;
 2. **Deploy to Firebase**: `firebase deploy`
 
 ### GitHub Actions
-Your existing GitHub Actions workflows should now work correctly:
+Your GitHub Actions workflows should now work correctly:
 - `.github/workflows/firebase-hosting-merge.yml` - deploys on push to main
 - `.github/workflows/firebase-hosting-pull-request.yml` - creates preview deployments for PRs
 
@@ -93,6 +157,7 @@ Your existing GitHub Actions workflows should now work correctly:
 - ✅ Static export generates properly in `/out` directory
 - ✅ Firebase configuration files are in place
 - ✅ All problematic files removed and added to `.gitignore`
+- ✅ GitHub Actions workflows fixed with proper Node.js setup and dependency installation
 
 ## Next Steps
 1. Push these changes to your repository
@@ -105,6 +170,15 @@ Your existing GitHub Actions workflows should now work correctly:
 - `next.config.ts` (modified)
 - `package.json` (modified)
 - `.gitignore` (modified)
+- `.github/workflows/firebase-hosting-merge.yml` (modified)
+- `.github/workflows/firebase-hosting-pull-request.yml` (modified)
 - Removed all `._*` files
+
+## Common Troubleshooting
+
+### If you still see failures:
+1. **Check Firebase Service Account**: Ensure `FIREBASE_SERVICE_ACCOUNT_MTG_AFFORD_CALC_API_SERVERLESS` secret is properly set in GitHub
+2. **Verify Project ID**: Confirm `mtg-afford-calc-api-serverless` is the correct Firebase project ID
+3. **Check build logs**: Look for any remaining import/export issues in the build output
 
 Your Firebase deployment should now work without issues!
